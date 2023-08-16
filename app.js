@@ -10,6 +10,7 @@ function calculateExpression(expression) {
     const multiplicationAndDivision = [];
     const additionAndSubtraction = [];
     const operandStack = [];
+    const operatorStack = [];
 
     const operators = {
         '+': 1,
@@ -21,8 +22,8 @@ function calculateExpression(expression) {
     function performOperation(operator) {
         const b = operandStack.pop();
         const a = operandStack.pop();
-        const c = Number(a)
-        const d = Number(b)
+        const c = Number(a);
+        const d = Number(b);
         switch (operator) {
             case '+':
                 operandStack.push(c + d);
@@ -43,40 +44,28 @@ function calculateExpression(expression) {
     }
 
     for (const token of expression.split(' ')) {
-        if(isNaN((token)) && token!=='+'  && token!=='-'  && token!=='/'  && token!=='*'){
-            throw new Error("Invalid input ! Kindly check your input");
-        }
-        if (!isNaN((token))) {
-            operandStack.push((token));
-        } else if (token in operators) {
-            if (token === '*' || token === '/') {
-                while (
-                    multiplicationAndDivision.length > 0 &&
-                    operators[multiplicationAndDivision[multiplicationAndDivision.length - 1]] >= operators[token]
-                ) {
-                    const operator = multiplicationAndDivision.pop();
-                    performOperation(operator);
-                }
-                multiplicationAndDivision.push(token);
-            } else if (token === '+' || token === '-') {
-                while (
-                    additionAndSubtraction.length > 0 &&
-                    operators[additionAndSubtraction[additionAndSubtraction.length - 1]] >= operators[token]
-                ) {
-                    const operator = additionAndSubtraction.pop();
-                    performOperation(operator);
-                }
-                additionAndSubtraction.push(token);
+        if (token === '(') {
+            operatorStack.push(token);
+        } else if (token === ')') {
+            while (operatorStack.length > 0 && operatorStack[operatorStack.length - 1] !== '(') {
+                performOperation(operatorStack.pop());
             }
+            operatorStack.pop(); 
+        } else if (!isNaN(token)) {
+            operandStack.push(token);
+        } else if (token in operators) {
+            while (
+                operatorStack.length > 0 &&
+                operators[operatorStack[operatorStack.length - 1]] >= operators[token]
+            ) {
+                performOperation(operatorStack.pop());
+            }
+            operatorStack.push(token);
         }
     }
 
-    while (multiplicationAndDivision.length > 0) {
-        performOperation(multiplicationAndDivision.pop());
-    }
-
-    while (additionAndSubtraction.length > 0) {
-        performOperation(additionAndSubtraction.pop());
+    while (operatorStack.length > 0) {
+        performOperation(operatorStack.pop());
     }
 
     return operandStack[0];
@@ -91,23 +80,25 @@ app.post('/evaluate', (req, res) => {
 
     function unmatchedParanthesis(s) {
         const openingBracket = '(';
-        const closingBracket = ')'
-        const stack = []
+        const closingBracket = ')';
+        const stack = [];
         for (const char of s) {
             if (openingBracket.includes(char)) {
-                stack.push(char)
+                stack.push(char);
             } else if (closingBracket.includes(char)) {
-                const lastClosingbracket = stack.pop()
+                const lastClosingbracket = stack.pop();
                 if (lastClosingbracket !== openingBracket) {
-                    return false
+                    return false;
                 }
             }
         }
-        return stack.length === 0
+        return stack.length === 0;
     }
+
     if (!unmatchedParanthesis(expression)) {
-        return res.status(400).json({ error: "Unmatched Paranthesis" })
+        return res.status(400).json({ error: "Unmatched Parenthesis" });
     }
+
     try {
         const result = calculateExpression(expression);
         return res.json({ result });
