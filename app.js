@@ -5,7 +5,11 @@ const app = express();
 const port = 3000;
 
 app.use(bodyParser.json());
-
+app.use((req, res, next) => {
+    console.log(`URL: ${req.url}`);
+    console.log(`Request Body: ${JSON.stringify(req.body)}`);
+    next();
+});
 function calculateExpression(expression) {
     const multiplicationAndDivision = [];
     const additionAndSubtraction = [];
